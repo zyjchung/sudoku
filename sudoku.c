@@ -46,7 +46,7 @@ void DrawGraphBoard(void)
 
 
 
-void CalcGraphBoard(void)
+void CalcGraphBoard(int candiBoard[][BOARD_SIZE][BOARD_SIZE])
 {
 	int i,j,k;
 	
@@ -60,7 +60,7 @@ void CalcGraphBoard(void)
 				
 				y = i * GRAPH_UNIT_SIZE + k / GRAPH_UNIT_SIZE;
 				x = j * GRAPH_UNIT_SIZE + k % GRAPH_UNIT_SIZE;
-				if( candidateBoard[i][j][k] == 1)
+				if( candiBoard[i][j][k] == 1)
 				{
 						graphBoard[y][x] = k + '1';
 				}
@@ -113,7 +113,7 @@ int InitCalcCandidateBoard(void)
 	return 0;
 }
 
-int DrawBoard()
+int DrawBoard(char inBoard[][BOARD_SIZE])
 {
 	int i,j;
 
@@ -122,7 +122,7 @@ int DrawBoard()
 		printf("\n");
 		for(j=0;j<9;j++)
 		{
-			printf("%c",baseBoard[i][j]);
+			printf("%c",inBoard[i][j]);
 		}
 	}
 	return 0;
@@ -160,19 +160,12 @@ int ReadBoard(char *fname)
 	printf(" cnt = %d\n",cnt);
 	fclose(fp);
 
-	DrawBoard();
+	DrawBoard(baseBoard);
 	
 	return 0;
 }
 
-int RemoveTarget(int y, int x, int target)
-{
-//	printf("L(%d) %d %d %d  old=%d\n",__LINE__,y,x,target,candidateBoard[y][x][target]);
-	candidateBoard[y][x][target] = 0;
-	return 0;
-}
-
-int CheckCell(int y,int x)
+int CheckCell(int y,int x,int candiBoard[][BOARD_SIZE][BOARD_SIZE])
 {
 	int i;
 	int cnt;
@@ -181,7 +174,7 @@ int CheckCell(int y,int x)
 	cnt = 0;
 	for(i=0;i<9;i++)
 	{
-		if(candidateBoard[y][x][i] == 1)
+		if(candiBoard[y][x][i] == 1)
 		{
 			cnt++;
 			target = i;
@@ -199,7 +192,14 @@ int CheckCell(int y,int x)
 	
 }
 
-int CalcLoop(void)
+int RemoveTarget(int y, int x, int target, int candiBoard[][BOARD_SIZE][BOARD_SIZE])
+{
+	//printf("%s %d",__func__,__LINE__);
+	candiBoard[y][x][target] = 0;
+	return 0;
+}
+
+int CalcLoop(char inBoard[][BOARD_SIZE], int candiBoard[][BOARD_SIZE][BOARD_SIZE])
 {
 	int i,j;
 	int flag = 0;
@@ -208,17 +208,16 @@ int CalcLoop(void)
 	{
 		for(j=0;j<9;j++)
 		{
-			if(baseBoard[i][j] != ' ' && baseBoard[i][j] != 0)
+			if(inBoard[i][j] != ' ' && inBoard[i][j] != 0)
 			{
-				int target = baseBoard[i][j] - '1';
+				int target = inBoard[i][j] - '1';
 				int ii;
 
 				for(ii=0;ii<9;ii++)
 				{
-					if(baseBoard[i][ii] == ' ' || baseBoard[i][ii] == 0)
+					if(inBoard[i][ii] == ' ' || inBoard[i][ii] == 0)
 					{
-						int ret;
-						RemoveTarget(i,ii,target);
+						RemoveTarget(i,ii,target,candiBoard);
 					}
 				}
 			}
@@ -230,17 +229,16 @@ int CalcLoop(void)
 	{
 		for(i=0;i<9;i++)
 		{
-			if(baseBoard[i][j] != ' ' && baseBoard[i][j] != 0)
+			if(inBoard[i][j] != ' ' && inBoard[i][j] != 0)
 			{
-				int target = baseBoard[i][j] - '1';
+				int target = inBoard[i][j] - '1';
 				int ii;
 
 				for(ii=0;ii<9;ii++)
 				{
-					if(baseBoard[ii][j] == ' ' || baseBoard[ii][j] == 0)
+					if(inBoard[ii][j] == ' ' || inBoard[ii][j] == 0)
 					{
-						int ret;
-						RemoveTarget(ii,j,target);
+						RemoveTarget(ii,j,target,candiBoard);
 					}
 				}
 			}
@@ -265,9 +263,9 @@ int CalcLoop(void)
 			py = y+wy;
 			px = x+wx;
 
-			if(baseBoard[py][px] != ' ' && baseBoard[py][px] != 0)
+			if(inBoard[py][px] != ' ' && inBoard[py][px] != 0)
 			{
-				int target = baseBoard[py][px] - '1';
+				int target = inBoard[py][px] - '1';
 				int ii;
 
 				for(ii=0;ii<9;ii++)
@@ -280,10 +278,10 @@ int CalcLoop(void)
 
 					tpy = y+twy;
 					tpx = x+twx;
-					if(baseBoard[tpy][tpx] == ' ' || baseBoard[tpy][tpx] == 0)
+					if(inBoard[tpy][tpx] == ' ' || inBoard[tpy][tpx] == 0)
 					{
 						int ret;
-						RemoveTarget(tpy,tpx,target);
+						RemoveTarget(tpy,tpx,target,candiBoard);
 					}
 				}
 			}
@@ -294,13 +292,13 @@ int CalcLoop(void)
 	{
 		for(j=0;j<9;j++)
 		{
-			if(baseBoard[i][j] == ' ' || baseBoard[i][j] == 0)
+			if(inBoard[i][j] == ' ' || inBoard[i][j] == 0)
 			{
 				int ret;
-				ret = CheckCell(i,j);
+				ret = CheckCell(i,j,candiBoard);
 				if(ret != -1)
 				{
-					baseBoard[i][j] = ret + '1';
+					inBoard[i][j] = ret + '1';
 					flag = 1;
 				}
 			}
@@ -315,6 +313,100 @@ int CalcLoop(void)
 	return flag;
 }
 
+int CalcRecursive(char inBoard[][BOARD_SIZE], int candiBoard[][BOARD_SIZE][BOARD_SIZE])
+{
+// Input, => Success
+//       => Conflict   first conflict point using first number, until no more first number (OK)
+//	   => Fail eleminate first conflict point numer.
+
+	int flag;
+	int conflictFlag;
+	int i,j,k;
+
+	char workBoard[BOARD_SIZE][BOARD_SIZE];
+	int  workCandiBoard[BOARD_SIZE][BOARD_SIZE][BOARD_SIZE];
+	int checkArray[BOARD_SIZE];
+
+	int cnt;
+
+	memcpy(workBoard,inBoard,sizeof(workBoard));
+	memcpy(workCandiBoard,candiBoard,sizeof(workCandiBoard));
+
+	conflictFlag = 0;
+	flag = CalcLoop(workBoard,workCandiBoard);
+
+	if(flag == 0)
+	{
+		printf("calc first conflict cell\n");
+
+		for(i=0; i<BOARD_SIZE; i++)
+		{
+			for(j=0; j<BOARD_SIZE; j++)
+			{
+				cnt = 0;
+				memset(checkArray,0,sizeof(checkArray));
+				for(k=0; k<BOARD_SIZE; k++)
+				{
+					if(workCandiBoard[i][j][k] != 0)
+					{
+						checkArray[k] = 1;
+						cnt ++;
+					}
+				}
+
+				if(cnt >= 2)
+				{
+					int l,ll;
+					int candiIndex;
+					int indexCnt;
+					int retVal;
+
+					printf("%d,%d cell conflict(%d)\n\r",i,j,cnt);
+					conflictFlag = 1;
+					indexCnt = 0;
+					for(l=0; l<BOARD_SIZE; l++)
+					{
+						printf("%d  indexCnt %d checkArrary(%d) workCandiBoard(%d)\n",l, indexCnt, checkArray[l], workCandiBoard[i][j][l]);
+						if(checkArray[l] != 0)
+						{
+							indexCnt++;
+							for(ll=0; ll<BOARD_SIZE; ll++)
+							{
+								workCandiBoard[i][j][ll] = 0;
+							}
+							workCandiBoard[i][j][l] = 1;
+							workBoard[i][j] = '1' + l;
+							retVal = CalcRecursive(workBoard,workCandiBoard);
+							DrawBoard(workBoard);
+							printf("\nretVal = %d\n",retVal);
+							if(retVal == 0)
+							{
+								conflictFlag = 0;
+								goto end_recursive;
+							}
+						}
+					}
+					break;
+				}
+			}
+			if(conflictFlag)
+			{
+				break;
+			}
+		}
+		conflictFlag = 2;
+		return conflictFlag;
+	}
+	else
+	{
+		printf("OK\n");
+	}
+
+end_recursive:
+	memcpy(inBoard,workBoard,sizeof(workBoard));
+	memcpy(candiBoard,workCandiBoard,sizeof(workCandiBoard));
+	return conflictFlag;
+}
 
 int main(int argc,char * argv[] ) 
 {
@@ -332,17 +424,17 @@ int main(int argc,char * argv[] )
 	
 	InitCandidateBoard();
 	InitCalcCandidateBoard();
-	CalcGraphBoard();
+	CalcGraphBoard(candidateBoard);
 	DrawGraphBoard();
 	while(1)
 	{
-		flag = CalcLoop();
-		if(flag == 0)
+		flag = CalcRecursive(baseBoard,candidateBoard);
+		if(flag != 0)
 		{
 			break;
 		}
 	}
-	DrawBoard();
-	CalcGraphBoard();
+	DrawBoard(baseBoard);
+	CalcGraphBoard(candidateBoard);
 	DrawGraphBoard();
 }
