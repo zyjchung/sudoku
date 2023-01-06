@@ -1,5 +1,5 @@
 #include <stdio.h>
-#include <mem.h>
+//#include <mem.h>
 
 
 #define	BOARD_SIZE		(9)
@@ -15,7 +15,7 @@ char	graphBoard[GRAPH_SIZE][GRAPH_SIZE];
 void DrawGraphBoard(void)
 {
 	int i,j;
-	
+
 	for(i=0;i<GRAPH_SIZE;i++)
 	{
 		printf("\n");
@@ -37,10 +37,10 @@ void DrawGraphBoard(void)
 			{
 				printf("|");
 			}
-			
+
 			printf("%c",graphBoard[i][j]);
 		}
-	}	
+	}
 	printf("\n");
 }
 
@@ -49,7 +49,7 @@ void DrawGraphBoard(void)
 void CalcGraphBoard(int candiBoard[][BOARD_SIZE][BOARD_SIZE])
 {
 	int i,j,k;
-	
+
 	for(i=0;i<BOARD_SIZE;i++)
 	{
 		for(j=0;j<BOARD_SIZE;j++)
@@ -57,7 +57,7 @@ void CalcGraphBoard(int candiBoard[][BOARD_SIZE][BOARD_SIZE])
 			for(k=0;k<BOARD_SIZE;k++)
 			{
 				int x,y;
-				
+
 				y = i * GRAPH_UNIT_SIZE + k / GRAPH_UNIT_SIZE;
 				x = j * GRAPH_UNIT_SIZE + k % GRAPH_UNIT_SIZE;
 				if( candiBoard[i][j][k] == 1)
@@ -68,17 +68,17 @@ void CalcGraphBoard(int candiBoard[][BOARD_SIZE][BOARD_SIZE])
 				{
 						graphBoard[y][x] = ' ';
 				}
-			}			
+			}
 		}
-	}	
+	}
 }
 
 void InitCandidateBoard(void)
 {
 	int i,j,k;
-	
+
 	memset(graphBoard,' ',sizeof(graphBoard));
-	
+
 	for(i=0;i<BOARD_SIZE;i++)
 	{
 		for(j=0;j<BOARD_SIZE;j++)
@@ -86,7 +86,7 @@ void InitCandidateBoard(void)
 			for(k=0;k<BOARD_SIZE;k++)
 			{
 				candidateBoard[i][j][k] = 1;
-			}			
+			}
 		}
 	}
 }
@@ -104,12 +104,12 @@ int InitCalcCandidateBoard(void)
 				for(k=0;k<BOARD_SIZE;k++)
 				{
 					candidateBoard[i][j][k] = 0;
-				}	
+				}
 				candidateBoard[i][j][baseBoard[i][j]-'1'] = 1;
 			}
 		}
 	}
-	
+
 	return 0;
 }
 
@@ -132,7 +132,7 @@ int ReadBoard(char *fname)
 {
 	FILE *fp;
 	int cnt = 0;
-	
+
 	fp = fopen(fname,"rb");
 	if(fp == NULL)
 	{
@@ -146,13 +146,13 @@ int ReadBoard(char *fname)
 		{
 			break;
 		}
-		
+
 		if(inChar == ' ' || (inChar >= '0' && inChar <= '9'))
 		{
 			int x,y;
-			
+
 			y = cnt % BOARD_SIZE;
-			x = cnt / BOARD_SIZE; 
+			x = cnt / BOARD_SIZE;
 			baseBoard[x][y] = (char)inChar;
 			cnt++;
 		}
@@ -161,7 +161,7 @@ int ReadBoard(char *fname)
 	fclose(fp);
 
 	DrawBoard(baseBoard);
-	
+
 	return 0;
 }
 
@@ -189,7 +189,7 @@ int CheckCell(int y,int x,int candiBoard[][BOARD_SIZE][BOARD_SIZE])
 	{
 		return (-1);
 	}
-	
+
 }
 
 int RemoveTarget(int y, int x, int target, int candiBoard[][BOARD_SIZE][BOARD_SIZE])
@@ -408,20 +408,48 @@ end_recursive:
 	return conflictFlag;
 }
 
-int main(int argc,char * argv[] ) 
+
+// 1: success
+// 2: unknown
+// 3: fail
+int CalcRecursiveMain(char inBoard[][BOARD_SIZE], int candiBoard[][BOARD_SIZE][BOARD_SIZE])
+{
+	int retval = 0;
+	int i,j;
+	printf("enter\n");
+	DrawBoard(baseBoard);
+
+	for(i=0;i<9;i++)
+	{
+		printf("\n");
+		for(j=0;j<9;j++)
+		{
+			if(inBoard[i][j]==' ')
+			{
+				printf("%d %d\n",i,j);
+			}
+		}
+	}
+
+	printf("exit value = %d\n",retval);
+	return retval;
+}
+
+
+int main(int argc,char * argv[] )
 {
 	printf("Hello Sudoku %s %s\n",__DATE__,__TIME__);
 	int flag;
-	
+
 	if(argc == 2)
 	{
 		ReadBoard(argv[1]);
 	}
 	else
 	{
-		printf("sudoku.exe input.sud\n");					
+		printf("sudoku.exe input.sud\n");
 	}
-	
+
 	InitCandidateBoard();
 	InitCalcCandidateBoard();
 	CalcGraphBoard(candidateBoard);
@@ -431,10 +459,18 @@ int main(int argc,char * argv[] )
 		flag = CalcRecursive(baseBoard,candidateBoard);
 		if(flag != 0)
 		{
+			printf("success\n");
+			DrawBoard(baseBoard);
+			CalcGraphBoard(candidateBoard);
+			DrawGraphBoard();
+			printf("success\n");
+			break;
+		}
+		else
+		{
+			//find first candidata
+			CalcRecursiveMain(baseBoard,candidateBoard);
 			break;
 		}
 	}
-	DrawBoard(baseBoard);
-	CalcGraphBoard(candidateBoard);
-	DrawGraphBoard();
 }
