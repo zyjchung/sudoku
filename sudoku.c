@@ -1,5 +1,5 @@
 #include <stdio.h>
-//#include <mem.h>
+#include <string.h>
 
 
 #define	BOARD_SIZE		(9)
